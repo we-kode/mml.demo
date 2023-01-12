@@ -1,0 +1,33 @@
+{
+  "name": "mml.demo",
+  "version": "1.0.0",
+  "description": "Demo of the mml.project backend",
+  "main": "src/index.js",
+  "scripts": {
+    "start_vercel": "vercel dev",
+    "deploy": "vercel deploy --prod",
+    "start": "npx tsc -w",
+    "dev": "npx nodemon"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/we-kode/mml.demo.git"
+  },
+  "author": "WeKoDe",
+  "license": "GNU",
+  "bugs": {
+    "url": "https://github.com/we-kode/mml.project/issues"
+  },
+  "homepage": "https://github.com/we-kode/mml.demo#readme",
+  "dependencies": {
+    "body-parser": "^1.20.1",
+    "express": "^4.18.2",
+    "vercel": "^28.11.1"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.15",
+    "@types/node": "^18.11.18",
+    "nodemon": "^2.0.20",
+    "typescript": "^4.9.4"
+  }
+}
