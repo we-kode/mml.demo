@@ -27,11 +27,15 @@ const stream = `${apiV}/media/stream`;
 // var credentials = { key: privateKey, cert: certificate };
 const app = (0, express_1.default)();
 // var httpsServer = https.createServer(credentials, app);
-var httpsServer = http.createServer(app);
+// var httpsServer = http.createServer(app);
 process.env.PWD = process.cwd();
-httpsServer.listen(process.env.PORT || 3001);
+// httpsServer.listen(process.env.PORT || 3001);
+app.set("port", process.env.PORT || 3000);
 app.use(express_1.default.static(process.env.PWD + '/public'));
 app.use(express_1.default.json());
+app.listen(app.get("port"), () => {
+    console.log(`Server on http://localhost:${app.get("port")}/`);
+});
 /// identity ///
 app.post(`/${identity}/client/register/:token`, (request, response) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;

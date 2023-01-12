@@ -17,12 +17,18 @@ const stream = `${apiV}/media/stream`;
 // var credentials = { key: privateKey, cert: certificate };
 const app: Application = express();
 // var httpsServer = https.createServer(credentials, app);
-var httpsServer = http.createServer(app);
+// var httpsServer = http.createServer(app);
 process.env.PWD = process.cwd();
 
-httpsServer.listen(process.env.PORT || 3001);
+// httpsServer.listen(process.env.PORT || 3001);
+app.set("port", process.env.PORT || 3000);
 app.use(express.static(process.env.PWD + '/public'));
 app.use(express.json());
+
+app.listen(app.get("port"), () => {
+    console.log(`Server on http://localhost:${app.get("port")}/`);
+});
+
 
 /// identity ///
 app.post(`/${identity}/client/register/:token`, async (request: Request, response: Response) => {
