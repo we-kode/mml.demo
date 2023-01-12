@@ -3,6 +3,7 @@ import fs from 'fs';
 import { demoClient, regToken } from './demo_reg_data';
 import { albums, artists, genres, records } from './media_data';
 var https = require('https');
+var http = require('http');
 
 const apiV = 'api/v1.0';
 const identity = `${apiV}/identity`;
@@ -10,12 +11,13 @@ const record = `${apiV}/media/record`;
 const stream = `${apiV}/media/stream`;
 
 // TODO change t load from config
-var privateKey = fs.readFileSync('D:\\certs\\dev.key', 'utf8');
-var certificate = fs.readFileSync('D:\\certs\\dev.crt', 'utf8');
+// var privateKey = fs.readFileSync('D:\\certs\\dev.key', 'utf8');
+// var certificate = fs.readFileSync('D:\\certs\\dev.crt', 'utf8');
 
-var credentials = { key: privateKey, cert: certificate };
+// var credentials = { key: privateKey, cert: certificate };
 const app: Application = express();
-var httpsServer = https.createServer(credentials, app);
+// var httpsServer = https.createServer(credentials, app);
+var httpsServer = http.createServer(app);
 process.env.PWD = process.cwd();
 
 httpsServer.listen(process.env.PORT || 3001);

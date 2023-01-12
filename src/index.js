@@ -13,20 +13,21 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
-const fs_1 = __importDefault(require("fs"));
 const demo_reg_data_1 = require("./demo_reg_data");
 const media_data_1 = require("./media_data");
 var https = require('https');
+var http = require('http');
 const apiV = 'api/v1.0';
 const identity = `${apiV}/identity`;
 const record = `${apiV}/media/record`;
 const stream = `${apiV}/media/stream`;
 // TODO change t load from config
-var privateKey = fs_1.default.readFileSync('D:\\certs\\dev.key', 'utf8');
-var certificate = fs_1.default.readFileSync('D:\\certs\\dev.crt', 'utf8');
-var credentials = { key: privateKey, cert: certificate };
+// var privateKey = fs.readFileSync('D:\\certs\\dev.key', 'utf8');
+// var certificate = fs.readFileSync('D:\\certs\\dev.crt', 'utf8');
+// var credentials = { key: privateKey, cert: certificate };
 const app = (0, express_1.default)();
-var httpsServer = https.createServer(credentials, app);
+// var httpsServer = https.createServer(credentials, app);
+var httpsServer = http.createServer(app);
 process.env.PWD = process.cwd();
 httpsServer.listen(process.env.PORT || 3001);
 app.use(express_1.default.static(process.env.PWD + '/public'));
