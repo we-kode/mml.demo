@@ -319,6 +319,6 @@ app.post(`/${stream}/previous/:recordId`, async (request: Request, response: Res
 });
 
 /// register homepage ///
-app.use('/', (req: Request, res: Response): void => {
+app.get('/', (req: Request, res: Response): void => {
     res.sendFile('./static/register.html', { root: __dirname });
 });

@@ -284,6 +284,6 @@ app.post(`/${stream}/previous/:recordId`, (request, response) => __awaiter(void 
     response.status(200).send(items[actualIndex - 1]);
 }));
 /// register homepage ///
-app.use('/', (req, res) => {
+app.get('/', (req, res) => {
     res.sendFile('./static/register.html', { root: __dirname });
 });
