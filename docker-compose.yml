@@ -1,0 +1,14 @@
+services:
+   wekode.mml.demo:
+        build:
+            context: .
+            dockerfile: Dockerfile
+        image: w3kod3/wekode.mml.demo:1.0.0
+        container_name: 'wekode.mml.demo'
+        ports:
+            - "${SSL_PORT}:3001"
+        volumes:
+            - ${VOL_CERTS}:/etc/ssl/certs:ro
+            - ${QR_PATH}/qr.png:/app/public/qr.png:ro
+        environment:
+            CERT_NAME: ${CERT_NAME}
