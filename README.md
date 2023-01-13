@@ -1,6 +1,6 @@
 # mml.demo
 
-This repository contaibns a mocked demo backend for testing purpose of the android and ios app of the [mml.project](https://we-kode.github.io/mml.project/). You can use this by running it in a docker container to test the app.
+This repository contains a mocked demo backend for testing purpose of the android and ios app of the [mml.project](https://we-kode.github.io/mml.project/). You can use this by running it in a docker container to test the app.
 
 ## Prerequites
 
@@ -8,11 +8,11 @@ This project provides a ready to go [docker image](https://hub.docker.com/reposi
 
 ### Port
 
-On the host machine you should provide one `SSL_PORT` which can be reached on your mneeds in your local network or from outside. This port will be mapped to the port 3001 in the docker file.
+On the host machine you should provide one `SSL_PORT` which can be reached on your needs in your local network or from outside. This port will be mapped to the port 3001 in the docker file.
 
 ### SSL/TLS certificates
 
-The [mml.app](https://github.com/we-kode/mml.app) allows only secure backend connections. So we need a certificate for your macheine where you run the demo backend. Please provide a `.key` and a `.crt` file.
+The [mml.app](https://github.com/we-kode/mml.app) allows only secure backend connections. So we need a certificate for your machine where you run the demo backend. Please provide a `.key` and a `.crt` file.
 The `VOL_CERTS` definess the path to the folder, where the cert is on the host machine and the `CERT_NAME` defines the name of the certificate without the extension.
 
 ### QR code
