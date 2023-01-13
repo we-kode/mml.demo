@@ -4,7 +4,7 @@ This repository contaibns a mocked demo backend for testing purpose of the andro
 
 ## Prerequites
 
-This project provides a ready to go [docker image]() you can use. If you want to use docker-compose you can [download]() the provided file and configure the [.env]() file. Before you can use the backend you must complete following steps.
+This project provides a ready to go [docker image](https://hub.docker.com/repository/docker/w3kod3/wekode.mml.demo/general) you can use. If you want to use docker-compose you can [download](https://github.com/we-kode/mml.demo/blob/master/docker-compose.yml) the provided file and configure the [.env](https://github.com/we-kode/mml.demo/blob/master/.env) file. Before you can use the backend you must complete following steps.
 
 ### Port
 
@@ -12,7 +12,7 @@ On the host machine you should provide one `SSL_PORT` which can be reached on yo
 
 ### SSL/TLS certificates
 
-The [mml.app]() allows only secure backend connections. So we need a certificate for your macheine where you run the demo backend. Please provide a `.key` and a `.crt` file.
+The [mml.app](https://github.com/we-kode/mml.app) allows only secure backend connections. So we need a certificate for your macheine where you run the demo backend. Please provide a `.key` and a `.crt` file.
 The `VOL_CERTS` definess the path to the folder, where the cert is on the host machine and the `CERT_NAME` defines the name of the certificate without the extension.
 
 ### QR code
