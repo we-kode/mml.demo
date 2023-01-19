@@ -1,34 +1,25 @@
 import express, { Application, Request, Response } from 'express';
 import fs from 'fs';
 import { demoClient, regToken } from './demo_reg_data';
-import { albums, artists, genres, records } from './media_data';
+import { albums, artists, genres, languages, records } from './media_data';
 var https = require('https');
-var http = require('http');
 
 const apiV = 'api/v1.0';
 const identity = `${apiV}/identity`;
 const record = `${apiV}/media/record`;
 const stream = `${apiV}/media/stream`;
 
-// TODO change t load from config
-// var privateKey = fs.readFileSync('D:\\certs\\dev.key', 'utf8');
-// var certificate = fs.readFileSync('D:\\certs\\dev.crt', 'utf8');
+var privateKey = fs.readFileSync(`/etc/ssl/certs/${process.env.CERT_NAME}.key`, 'utf8');
+var certificate = fs.readFileSync(`/etc/ssl/certs/${process.env.CERT_NAME}.crt`, 'utf8');
 
-// var credentials = { key: privateKey, cert: certificate };
+var credentials = { key: privateKey, cert: certificate };
 const app: Application = express();
-// var httpsServer = https.createServer(credentials, app);
-// var httpsServer = http.createServer(app);
+var httpsServer = https.createServer(credentials, app);
 process.env.PWD = process.cwd();
 
-// httpsServer.listen(process.env.PORT || 3001);
-app.set("port", process.env.PORT || 3000);
+httpsServer.listen(process.env.PORT || 3001);
 app.use(express.static(process.env.PWD + '/public'));
 app.use(express.json());
-
-app.listen(app.get("port"), () => {
-    console.log(`Server on http://localhost:${app.get("port")}/`);
-});
-
 
 /// identity ///
 app.post(`/${identity}/client/register/:token`, async (request: Request, response: Response) => {
@@ -74,6 +65,11 @@ app.post(`/${record}/list`, async (request: Request, response: Response) => {
         items = items.filter(value => value.genre && fge.includes(value.genre));
     }
 
+    if (data.languages && data.languages.length > 0) {
+        const fge = languages.filter(language => data.languages.includes(language.languageId)).map(language => language.name);
+        items = items.filter(value => value.language && fge.includes(value.language));
+    }
+
     if (data.startDate && data.endDate) {
         items = items.filter(value => data.startDate.split('T')[0] <= value.date.split('T')[0] && value.date.split('T')[0] <= data.endDate.split('T')[0]);
     }
@@ -108,6 +104,11 @@ app.post(`/${record}/listFolder`, async (request: Request, response: Response) =
     if (data.genres && data.genres.length > 0) {
         const fge = genres.filter(genre => data.genres.includes(genre.genreId)).map(genre => genre.name);
         items = items.filter(value => value.genre && fge.includes(value.genre));
+    }
+
+    if (data.languages && data.languages.length > 0) {
+        const fge = languages.filter(language => data.languages.includes(language.languageId)).map(language => language.name);
+        items = items.filter(value => value.language && fge.includes(value.language));
     }
 
     if (data.startDate && data.endDate) {
@@ -172,6 +173,19 @@ app.get(`/${record}/genres`, async (request: Request, response: Response) => {
         });
 });
 
+app.get(`/${record}/languages`, async (request: Request, response: Response) => {
+    const filter = request.query['filter'] ?? '';
+    let items = languages;
+    if (filter) {
+        items = items.filter(value => value.name.toLowerCase().includes(filter.toString().toLowerCase()))
+    }
+    response.status(200)
+        .send({
+            items: items,
+            totalCount: items.length
+        });
+});
+
 /// stream ///
 app.get(`/${stream}/:recordId`, async (request: Request, response: Response) => {
     const record = request.params.recordId ?? '';
@@ -210,6 +224,11 @@ app.post(`/${stream}/next/:recordId`, async (request: Request, response: Respons
     if (data.genres && data.genres.length > 0) {
         const fge = genres.filter(genre => data.genres.includes(genre.genreId)).map(genre => genre.name);
         items = items.filter(value => value.genre && fge.includes(value.genre));
+    }
+
+    if (data.languages && data.languages.length > 0) {
+        const fge = languages.filter(language => data.languages.includes(language.languageId)).map(language => language.name);
+        items = items.filter(value => value.language && fge.includes(value.language));
     }
 
     if (data.startDate && data.endDate) {
@@ -277,6 +296,11 @@ app.post(`/${stream}/previous/:recordId`, async (request: Request, response: Res
     if (data.genres && data.genres.length > 0) {
         const fge = genres.filter(genre => data.genres.includes(genre.genreId)).map(genre => genre.name);
         items = items.filter(value => value.genre && fge.includes(value.genre));
+    }
+
+    if (data.languages && data.languages.length > 0) {
+        const fge = languages.filter(language => data.languages.includes(language.languageId)).map(language => language.name);
+        items = items.filter(value => value.language && fge.includes(value.language));
     }
 
     if (data.startDate && data.endDate) {

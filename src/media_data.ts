@@ -5,6 +5,7 @@ interface Record {
     duration: number,
     artist?: string,
     genre?: string,
+    language?: string,
     album?: string,
     checksum: string,
 };
@@ -27,6 +28,7 @@ export const records: Array<Record> = [
         checksum: '3155df7ed616f6ecf848bb0256270bd25abec37e2ddcb332ac9bdf87135bbbf9',
         artist: 'Anonymous Choir',
         genre: 'Classical',
+        language: 'Latin',
         album: 'Giovanni Croces Cantato Domino',
         date: '2009-01-01T02:00:00Z',
         duration: 134000.0,
@@ -143,5 +145,17 @@ export const genres: Array<Genre> = [
     {
         genreId: '9ead0172-e0cf-4af8-87fe-31d32f2be564',
         name: 'Blues'
+    },
+];
+
+interface Language {
+    languageId: string,
+    name: string,
+}
+
+export const languages: Array<Language> = [
+    {
+        languageId: '6e564963-3975-48b9-b19f-edd36a463ab3',
+        name: 'Latin'
     },
 ];
