@@ -39,6 +39,11 @@ app.post(`/${identity}/connect/token`, async (request: Request, response: Respon
         });
 });
 
+app.post(`/${identity}/client/removeRegistration`, async (request: Request, response: Response) => {
+    response.status(200)
+        .send();
+});
+
 /// records ///
 app.post(`/${record}/list`, async (request: Request, response: Response) => {
     const data = request.body;
@@ -195,6 +200,7 @@ app.get(`/${stream}/:recordId`, async (request: Request, response: Response) => 
         return;
     }
     response.status(200)
+        .contentType('audio/mpeg')
         .sendFile(`public/songs/${hash}`, { root: '.' });
 });
 
