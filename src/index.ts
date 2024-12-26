@@ -4,13 +4,16 @@ import { demoClient, regToken } from './demo_reg_data';
 import { albums, artists, genres, languages, records } from './media_data';
 var https = require('https');
 
-const apiV = 'api/v1.0';
-const identity = `${apiV}/identity`;
-const record = `${apiV}/media/record`;
-const stream = `${apiV}/media/stream`;
+const apiV = 'api/v';
+const identity = `${apiV}1.0/identity`;
+const record = `${apiV}2.0/media/record`;
+const mediaC = `${apiV}2.0/media`;
+const stream = `${apiV}2.0/media/stream`;
 
-var privateKey = fs.readFileSync(`/etc/ssl/certs/${process.env.CERT_NAME}.key`, 'utf8');
-var certificate = fs.readFileSync(`/etc/ssl/certs/${process.env.CERT_NAME}.crt`, 'utf8');
+// var privateKey = fs.readFileSync(`/etc/ssl/certs/${process.env.CERT_NAME}.key`, 'utf8');
+// var certificate = fs.readFileSync(`/etc/ssl/certs/${process.env.CERT_NAME}.crt`, 'utf8');
+var privateKey = fs.readFileSync(`D:\\certs\\dev.key`, 'utf8');
+var certificate = fs.readFileSync(`D:\\certs\\dev.crt`, 'utf8');
 
 var credentials = { key: privateKey, cert: certificate };
 const app: Application = express();
@@ -139,7 +142,7 @@ app.post(`/${record}/listFolder`, async (request: Request, response: Response) =
         });
 });
 
-app.get(`/${record}/artists`, async (request: Request, response: Response) => {
+app.get(`/${mediaC}/artist/artists`, async (request: Request, response: Response) => {
     const filter = request.query['filter'] ?? '';
     let items = artists;
     if (filter) {
@@ -152,7 +155,7 @@ app.get(`/${record}/artists`, async (request: Request, response: Response) => {
         });
 });
 
-app.get(`/${record}/albums`, async (request: Request, response: Response) => {
+app.get(`/${mediaC}/album/albums`, async (request: Request, response: Response) => {
     const filter = request.query['filter'] ?? '';
     let items = albums;
     if (filter) {
@@ -165,7 +168,7 @@ app.get(`/${record}/albums`, async (request: Request, response: Response) => {
         });
 });
 
-app.get(`/${record}/genres`, async (request: Request, response: Response) => {
+app.get(`/${mediaC}/genre/genres`, async (request: Request, response: Response) => {
     const filter = request.query['filter'] ?? '';
     let items = genres;
     if (filter) {
@@ -178,7 +181,7 @@ app.get(`/${record}/genres`, async (request: Request, response: Response) => {
         });
 });
 
-app.get(`/${record}/languages`, async (request: Request, response: Response) => {
+app.get(`/${mediaC}/language/languages`, async (request: Request, response: Response) => {
     const filter = request.query['filter'] ?? '';
     let items = languages;
     if (filter) {
@@ -193,7 +196,8 @@ app.get(`/${record}/languages`, async (request: Request, response: Response) => 
 
 /// stream ///
 app.get(`/${stream}/:recordId`, async (request: Request, response: Response) => {
-    const record = request.params.recordId ?? '';
+    const record = request.params.recordId?.split('.').slice(0, -1).join('.') ?? '';
+    console.log(record);
     const hash = records.find(elem => elem.recordId === record)?.checksum;
     if (!hash) {
         response.status(404);

@@ -13,29 +13,26 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
+const fs_1 = __importDefault(require("fs"));
 const demo_reg_data_1 = require("./demo_reg_data");
 const media_data_1 = require("./media_data");
 var https = require('https');
-var http = require('http');
-const apiV = 'api/v1.0';
-const identity = `${apiV}/identity`;
-const record = `${apiV}/media/record`;
-const stream = `${apiV}/media/stream`;
-// TODO change t load from config
-// var privateKey = fs.readFileSync('D:\\certs\\dev.key', 'utf8');
-// var certificate = fs.readFileSync('D:\\certs\\dev.crt', 'utf8');
-// var credentials = { key: privateKey, cert: certificate };
+const apiV = 'api/v';
+const identity = `${apiV}1.0/identity`;
+const record = `${apiV}2.0/media/record`;
+const mediaC = `${apiV}2.0/media`;
+const stream = `${apiV}2.0/media/stream`;
+// var privateKey = fs.readFileSync(`/etc/ssl/certs/${process.env.CERT_NAME}.key`, 'utf8');
+// var certificate = fs.readFileSync(`/etc/ssl/certs/${process.env.CERT_NAME}.crt`, 'utf8');
+var privateKey = fs_1.default.readFileSync(`D:\\certs\\dev.key`, 'utf8');
+var certificate = fs_1.default.readFileSync(`D:\\certs\\dev.crt`, 'utf8');
+var credentials = { key: privateKey, cert: certificate };
 const app = (0, express_1.default)();
-// var httpsServer = https.createServer(credentials, app);
-// var httpsServer = http.createServer(app);
+var httpsServer = https.createServer(credentials, app);
 process.env.PWD = process.cwd();
-// httpsServer.listen(process.env.PORT || 3001);
-app.set("port", process.env.PORT || 3000);
+httpsServer.listen(process.env.PORT || 3001);
 app.use(express_1.default.static(process.env.PWD + '/public'));
 app.use(express_1.default.json());
-app.listen(app.get("port"), () => {
-    console.log(`Server on http://localhost:${app.get("port")}/`);
-});
 /// identity ///
 app.post(`/${identity}/client/register/:token`, (request, response) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
@@ -52,6 +49,10 @@ app.post(`/${identity}/connect/token`, (request, response) => __awaiter(void 0, 
         .send({
         access_token: '142e3d7e-d8c3-48b2-b0b6-3e50eca7e704',
     });
+}));
+app.post(`/${identity}/client/removeRegistration`, (request, response) => __awaiter(void 0, void 0, void 0, function* () {
+    response.status(200)
+        .send();
 }));
 /// records ///
 app.post(`/${record}/list`, (request, response) => __awaiter(void 0, void 0, void 0, function* () {
@@ -73,6 +74,10 @@ app.post(`/${record}/list`, (request, response) => __awaiter(void 0, void 0, voi
     if (data.genres && data.genres.length > 0) {
         const fge = media_data_1.genres.filter(genre => data.genres.includes(genre.genreId)).map(genre => genre.name);
         items = items.filter(value => value.genre && fge.includes(value.genre));
+    }
+    if (data.languages && data.languages.length > 0) {
+        const fge = media_data_1.languages.filter(language => data.languages.includes(language.languageId)).map(language => language.name);
+        items = items.filter(value => value.language && fge.includes(value.language));
     }
     if (data.startDate && data.endDate) {
         items = items.filter(value => data.startDate.split('T')[0] <= value.date.split('T')[0] && value.date.split('T')[0] <= data.endDate.split('T')[0]);
@@ -103,6 +108,10 @@ app.post(`/${record}/listFolder`, (request, response) => __awaiter(void 0, void 
         const fge = media_data_1.genres.filter(genre => data.genres.includes(genre.genreId)).map(genre => genre.name);
         items = items.filter(value => value.genre && fge.includes(value.genre));
     }
+    if (data.languages && data.languages.length > 0) {
+        const fge = media_data_1.languages.filter(language => data.languages.includes(language.languageId)).map(language => language.name);
+        items = items.filter(value => value.language && fge.includes(value.language));
+    }
     if (data.startDate && data.endDate) {
         items = items.filter(value => data.startDate.split('T')[0] <= value.date.split('T')[0] && value.date.split('T')[0] <= data.endDate.split('T')[0]);
     }
@@ -122,7 +131,7 @@ app.post(`/${record}/listFolder`, (request, response) => __awaiter(void 0, void 
         totalCount: folder.length
     });
 }));
-app.get(`/${record}/artists`, (request, response) => __awaiter(void 0, void 0, void 0, function* () {
+app.get(`/${mediaC}/artist/artists`, (request, response) => __awaiter(void 0, void 0, void 0, function* () {
     var _d;
     const filter = (_d = request.query['filter']) !== null && _d !== void 0 ? _d : '';
     let items = media_data_1.artists;
@@ -135,7 +144,7 @@ app.get(`/${record}/artists`, (request, response) => __awaiter(void 0, void 0, v
         totalCount: items.length
     });
 }));
-app.get(`/${record}/albums`, (request, response) => __awaiter(void 0, void 0, void 0, function* () {
+app.get(`/${mediaC}/album/albums`, (request, response) => __awaiter(void 0, void 0, void 0, function* () {
     var _e;
     const filter = (_e = request.query['filter']) !== null && _e !== void 0 ? _e : '';
     let items = media_data_1.albums;
@@ -148,7 +157,7 @@ app.get(`/${record}/albums`, (request, response) => __awaiter(void 0, void 0, vo
         totalCount: items.length
     });
 }));
-app.get(`/${record}/genres`, (request, response) => __awaiter(void 0, void 0, void 0, function* () {
+app.get(`/${mediaC}/genre/genres`, (request, response) => __awaiter(void 0, void 0, void 0, function* () {
     var _f;
     const filter = (_f = request.query['filter']) !== null && _f !== void 0 ? _f : '';
     let items = media_data_1.genres;
@@ -161,25 +170,40 @@ app.get(`/${record}/genres`, (request, response) => __awaiter(void 0, void 0, vo
         totalCount: items.length
     });
 }));
+app.get(`/${mediaC}/language/languages`, (request, response) => __awaiter(void 0, void 0, void 0, function* () {
+    var _g;
+    const filter = (_g = request.query['filter']) !== null && _g !== void 0 ? _g : '';
+    let items = media_data_1.languages;
+    if (filter) {
+        items = items.filter(value => value.name.toLowerCase().includes(filter.toString().toLowerCase()));
+    }
+    response.status(200)
+        .send({
+        items: items,
+        totalCount: items.length
+    });
+}));
 /// stream ///
 app.get(`/${stream}/:recordId`, (request, response) => __awaiter(void 0, void 0, void 0, function* () {
-    var _g, _h;
-    const record = (_g = request.params.recordId) !== null && _g !== void 0 ? _g : '';
-    const hash = (_h = media_data_1.records.find(elem => elem.recordId === record)) === null || _h === void 0 ? void 0 : _h.checksum;
+    var _h, _j, _k;
+    const record = (_j = (_h = request.params.recordId) === null || _h === void 0 ? void 0 : _h.split('.').slice(0, -1).join('.')) !== null && _j !== void 0 ? _j : '';
+    console.log(record);
+    const hash = (_k = media_data_1.records.find(elem => elem.recordId === record)) === null || _k === void 0 ? void 0 : _k.checksum;
     if (!hash) {
         response.status(404);
         return;
     }
     response.status(200)
+        .contentType('audio/mpeg')
         .sendFile(`public/songs/${hash}`, { root: '.' });
 }));
 app.post(`/${stream}/next/:recordId`, (request, response) => __awaiter(void 0, void 0, void 0, function* () {
-    var _j, _k, _l, _m, _o, _p;
-    const record = (_j = request.params.recordId) !== null && _j !== void 0 ? _j : '';
+    var _l, _m, _o, _p, _q, _r;
+    const record = (_l = request.params.recordId) !== null && _l !== void 0 ? _l : '';
     const data = request.body;
-    const filter = (_k = request.query['filter']) !== null && _k !== void 0 ? _k : '';
-    const shuffle = Boolean((((_m = (_l = request.query['shuffle']) === null || _l === void 0 ? void 0 : _l.toString()) !== null && _m !== void 0 ? _m : false) || "").replace(/\s*(false|null|undefined|0)\s*/i, ""));
-    const repeat = Boolean((((_p = (_o = request.query['repeat']) === null || _o === void 0 ? void 0 : _o.toString()) !== null && _p !== void 0 ? _p : false) || "").replace(/\s*(false|null|undefined|0)\s*/i, ""));
+    const filter = (_m = request.query['filter']) !== null && _m !== void 0 ? _m : '';
+    const shuffle = Boolean((((_p = (_o = request.query['shuffle']) === null || _o === void 0 ? void 0 : _o.toString()) !== null && _p !== void 0 ? _p : false) || "").replace(/\s*(false|null|undefined|0)\s*/i, ""));
+    const repeat = Boolean((((_r = (_q = request.query['repeat']) === null || _q === void 0 ? void 0 : _q.toString()) !== null && _r !== void 0 ? _r : false) || "").replace(/\s*(false|null|undefined|0)\s*/i, ""));
     let items = media_data_1.records;
     if (filter) {
         items = items.filter(value => value.title.toLowerCase().includes(filter.toString().toLowerCase()));
@@ -195,6 +219,10 @@ app.post(`/${stream}/next/:recordId`, (request, response) => __awaiter(void 0, v
     if (data.genres && data.genres.length > 0) {
         const fge = media_data_1.genres.filter(genre => data.genres.includes(genre.genreId)).map(genre => genre.name);
         items = items.filter(value => value.genre && fge.includes(value.genre));
+    }
+    if (data.languages && data.languages.length > 0) {
+        const fge = media_data_1.languages.filter(language => data.languages.includes(language.languageId)).map(language => language.name);
+        items = items.filter(value => value.language && fge.includes(value.language));
     }
     if (data.startDate && data.endDate) {
         items = items.filter(value => data.startDate.split('T')[0] <= value.date.split('T')[0] && value.date.split('T')[0] <= data.endDate.split('T')[0]);
@@ -229,12 +257,12 @@ app.post(`/${stream}/next/:recordId`, (request, response) => __awaiter(void 0, v
     response.status(200).send(items[actualIndex + 1]);
 }));
 app.post(`/${stream}/previous/:recordId`, (request, response) => __awaiter(void 0, void 0, void 0, function* () {
-    var _q, _r, _s, _t, _u, _v;
-    const record = (_q = request.params.recordId) !== null && _q !== void 0 ? _q : '';
+    var _s, _t, _u, _v, _w, _x;
+    const record = (_s = request.params.recordId) !== null && _s !== void 0 ? _s : '';
     const data = request.body;
-    const filter = (_r = request.query['filter']) !== null && _r !== void 0 ? _r : '';
-    const shuffle = Boolean((((_t = (_s = request.query['shuffle']) === null || _s === void 0 ? void 0 : _s.toString()) !== null && _t !== void 0 ? _t : false) || "").replace(/\s*(false|null|undefined|0)\s*/i, ""));
-    const repeat = Boolean((((_v = (_u = request.query['repeat']) === null || _u === void 0 ? void 0 : _u.toString()) !== null && _v !== void 0 ? _v : false) || "").replace(/\s*(false|null|undefined|0)\s*/i, ""));
+    const filter = (_t = request.query['filter']) !== null && _t !== void 0 ? _t : '';
+    const shuffle = Boolean((((_v = (_u = request.query['shuffle']) === null || _u === void 0 ? void 0 : _u.toString()) !== null && _v !== void 0 ? _v : false) || "").replace(/\s*(false|null|undefined|0)\s*/i, ""));
+    const repeat = Boolean((((_x = (_w = request.query['repeat']) === null || _w === void 0 ? void 0 : _w.toString()) !== null && _x !== void 0 ? _x : false) || "").replace(/\s*(false|null|undefined|0)\s*/i, ""));
     let items = media_data_1.records;
     if (filter) {
         items = items.filter(value => value.title.toLowerCase().includes(filter.toString().toLowerCase()));
@@ -250,6 +278,10 @@ app.post(`/${stream}/previous/:recordId`, (request, response) => __awaiter(void 
     if (data.genres && data.genres.length > 0) {
         const fge = media_data_1.genres.filter(genre => data.genres.includes(genre.genreId)).map(genre => genre.name);
         items = items.filter(value => value.genre && fge.includes(value.genre));
+    }
+    if (data.languages && data.languages.length > 0) {
+        const fge = media_data_1.languages.filter(language => data.languages.includes(language.languageId)).map(language => language.name);
+        items = items.filter(value => value.language && fge.includes(value.language));
     }
     if (data.startDate && data.endDate) {
         items = items.filter(value => data.startDate.split('T')[0] <= value.date.split('T')[0] && value.date.split('T')[0] <= data.endDate.split('T')[0]);
