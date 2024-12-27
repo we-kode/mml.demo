@@ -25,7 +25,7 @@ app.use(express.static(process.env.PWD + '/public'));
 app.use(express.json());
 
 /// identity ///
-app.post(`/${identity}/client/register/:token`, async (request: Request, response: Response) => {
+app.post(`/api/v2.0/identity/client/register/:token`, async (request: Request, response: Response) => {
     const token = request.params.token ?? '';
     if (token === regToken) {
         response.status(200)
