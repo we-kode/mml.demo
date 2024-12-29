@@ -10,10 +10,10 @@ const record = `${apiV}2.0/media/record`;
 const mediaC = `${apiV}2.0/media`;
 const stream = `${apiV}2.0/media/stream`;
 
-// var privateKey = fs.readFileSync(`/etc/ssl/certs/${process.env.CERT_NAME}.key`, 'utf8');
-// var certificate = fs.readFileSync(`/etc/ssl/certs/${process.env.CERT_NAME}.crt`, 'utf8');
-var privateKey = fs.readFileSync(`D:\\certs\\dev.key`, 'utf8');
-var certificate = fs.readFileSync(`D:\\certs\\dev.crt`, 'utf8');
+var privateKey = fs.readFileSync(`/etc/ssl/certs/${process.env.CERT_NAME}.key`, 'utf8');
+var certificate = fs.readFileSync(`/etc/ssl/certs/${process.env.CERT_NAME}.crt`, 'utf8');
+//var privateKey = fs.readFileSync(`D:\\certs\\dev.key`, 'utf8');
+//var certificate = fs.readFileSync(`D:\\certs\\dev.crt`, 'utf8');
 
 var credentials = { key: privateKey, cert: certificate };
 const app: Application = express();
