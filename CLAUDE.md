@@ -8,7 +8,8 @@ TypeScript/Express mock HTTPS backend for testing the Android and iOS clients. I
 
 - `src/index.ts` creates the HTTPS Express server and exposes identity/media routes.
 - `src/demo_reg_data.ts` contains demo registration data; media fixtures live in `src/media_data.ts`.
-- `public/` serves the registration page and generated QR asset.
+- `src/static/register.html` is the registration page; `public/` serves the QR asset, demo songs and covers.
+- `npm run build` compiles to `dist/` (not committed); the container runs `node dist/index.js` on Node 24.
 - `docker-compose.yml`, `Dockerfile`, and `dev.env` define the container workflow.
 
 ## Local commands
@@ -16,6 +17,7 @@ TypeScript/Express mock HTTPS backend for testing the Android and iOS clients. I
 ```bash
 npm install
 npx tsc --noEmit
+npm run build
 npm run dev
 docker compose up -d
 ```

@@ -3,7 +3,7 @@ services:
         build:
             context: .
             dockerfile: Dockerfile
-        image: w3kod3/wekode.mml.demo:1.1.1
+        image: w3kod3/wekode.mml.demo:4.0.0
         container_name: 'wekode.mml.demo'
         ports:
             - "${SSL_PORT}:3001"

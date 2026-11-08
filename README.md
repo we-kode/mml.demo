@@ -39,3 +39,27 @@ eyJ0b2tlbiI6Ijk3aFB3N1JsVVJlYzRnNDhFc3h0LUgwSy1uYzZvV01QdGYtVWw4WTlvV2I4c21hZTU2
 To start the backend run `docker compose up -d`.
 
 If you not registered the device yet, then visit `https://<domain>:<port>` and follow the instructions shown on the page to register your device. 
+## Supported features
+
+The demo serves fixed demo data for the following features of the app:
+
+- Registration, login and removing the registration.
+- Records with search, filters by artist, album, genre, language and date, and the folder view.
+- Streaming with next, previous, shuffle and repeat.
+- One record with a cover (`public/covers`).
+- Newest and common artists and common genres on the Android Auto home screen.
+- Loading single records to continue the last playback and checking records by checksum when importing `.mml` files.
+
+Routes are accepted with and without version segment, e.g. `/api/media/record/list` and `/api/v2.0/media/record/list`. Announcements, sharing, livestreams and offline-only features are not part of the demo.
+
+## Development
+
+The demo requires Node.js 24.
+
+```bash
+npm install
+npm run build
+npm run dev
+```
+
+`npm run dev` compiles the sources to `dist` and restarts the server on changes. The server reads the certificate from `/etc/ssl/certs/<CERT_NAME>.key` and `.crt`, so run it in the container if these paths are not available on your machine.

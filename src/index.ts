@@ -1,358 +1,204 @@
-import express, { Application, Request, Response } from 'express';
+import express, { Request, Response } from 'express';
 import fs from 'fs';
+import https from 'https';
 import { demoClient, regToken } from './demo_reg_data';
 import { albums, artists, genres, languages, records } from './media_data';
-var https = require('https');
 
-const apiV = 'api/v';
-const identity = `${apiV}1.0/identity`;
-const record = `${apiV}2.0/media/record`;
-const mediaC = `${apiV}2.0/media`;
-const stream = `${apiV}2.0/media/stream`;
+type Record = typeof records[number];
 
-var privateKey = fs.readFileSync(`/etc/ssl/certs/${process.env.CERT_NAME}.key`, 'utf8');
-var certificate = fs.readFileSync(`/etc/ssl/certs/${process.env.CERT_NAME}.crt`, 'utf8');
-//var privateKey = fs.readFileSync(`D:\\certs\\dev.key`, 'utf8');
-//var certificate = fs.readFileSync(`D:\\certs\\dev.crt`, 'utf8');
+// The app calls most routes without a version segment, e.g. /api/media/record/list.
+const identity = (path: string) => `/api{/:version}/identity/${path}`;
+const media = (path: string) => `/api{/:version}/media/${path}`;
 
-var credentials = { key: privateKey, cert: certificate };
-const app: Application = express();
-var httpsServer = https.createServer(credentials, app);
-process.env.PWD = process.cwd();
+const credentials = {
+    key: fs.readFileSync(`/etc/ssl/certs/${process.env.CERT_NAME}.key`, 'utf8'),
+    cert: fs.readFileSync(`/etc/ssl/certs/${process.env.CERT_NAME}.crt`, 'utf8'),
+};
 
-httpsServer.listen(process.env.PORT || 3001);
-app.use(express.static(process.env.PWD + '/public'));
+const app = express();
+app.use(express.static('public'));
 app.use(express.json());
+https.createServer(credentials, app).listen(process.env.PORT || 3001);
+
+const day = (date: string) => date.split('T')[0];
+const flag = (value: unknown) => /^(true|1)$/i.test(value?.toString().trim() ?? '');
+const page = <T>(items: T[]) => ({ items, totalCount: items.length });
+const byFilter = <T>(items: T[], name: (item: T) => string, filter: unknown) =>
+    filter ? items.filter(item => name(item).toLowerCase().includes(filter.toString().toLowerCase())) : items;
+
+function namesOf<T>(source: T[], idOf: (item: T) => string, nameOf: (item: T) => string, ids?: string[], names?: string[]) {
+    return [...source.filter(item => ids?.includes(idOf(item))).map(nameOf), ...(names ?? [])];
+}
+
+function filterRecords(request: Request): Record[] {
+    const data = request.body ?? {};
+    let items = byFilter(records, record => record.title, request.query.filter);
+    const tags: [keyof Record, string[]][] = [
+        ['artist', namesOf(artists, a => a.artistId, a => a.name, data.artists, data.artistNames)],
+        ['album', namesOf(albums, a => a.albumId, a => a.albumName, data.albums, data.albumNames)],
+        ['genre', namesOf(genres, g => g.genreId, g => g.name, data.genres, data.genreNames)],
+        ['language', namesOf(languages, l => l.languageId, l => l.name, data.languages)],
+    ];
+    for (const [key, names] of tags) {
+        if (names.length > 0) {
+            items = items.filter(record => names.includes(record[key] as string));
+        }
+    }
+
+    if (data.startDate && data.endDate) {
+        items = items.filter(record => day(data.startDate) <= day(record.date) && day(record.date) <= day(data.endDate));
+    }
+
+    return items;
+}
+
+function mostCommon(values: (string | undefined)[]) {
+    const counts = new Map<string, number>();
+    values.forEach(value => value && counts.set(value, (counts.get(value) ?? 0) + 1));
+    return [...counts.entries()].sort((a, b) => b[1] - a[1]).map(([value]) => value);
+}
 
 /// identity ///
-app.post(`/api/v2.0/identity/client/register/:token`, async (request: Request, response: Response) => {
-    const token = request.params.token ?? '';
-    if (token === regToken) {
-        response.status(200)
-            .send(demoClient);
+app.post(identity('client/register/:token'), (request: Request, response: Response) => {
+    if (request.params.token === regToken) {
+        response.status(200).send(demoClient);
         return;
     }
     response.sendStatus(403);
 });
 
-app.post(`/${identity}/connect/token`, async (request: Request, response: Response) => {
-    response.status(200)
-        .send({
-            access_token: '142e3d7e-d8c3-48b2-b0b6-3e50eca7e704',
-        });
+app.post(identity('connect/token'), (_request: Request, response: Response) => {
+    response.status(200).send({ access_token: '142e3d7e-d8c3-48b2-b0b6-3e50eca7e704' });
 });
 
-app.post(`/${identity}/client/removeRegistration`, async (request: Request, response: Response) => {
-    response.status(200)
-        .send();
+app.post(identity('client/removeRegistration'), (_request: Request, response: Response) => {
+    response.sendStatus(200);
 });
 
 /// records ///
-app.post(`/${record}/list`, async (request: Request, response: Response) => {
-    const data = request.body;
-
-    const filter = request.query['filter'] ?? '';
-    let items = records;
-    if (filter) {
-        items = items.filter(value => value.title.toLowerCase().includes(filter.toString().toLowerCase()))
-    }
-
-
-    if (data.artists && data.artists.length > 0) {
-        const far = artists.filter(artist => data.artists.includes(artist.artistId)).map(artist => artist.name);
-        items = items.filter(value => value.artist && far.includes(value.artist));
-    }
-
-    if (data.albums && data.albums.length > 0) {
-        const fal = albums.filter(album => data.albums.includes(album.albumId)).map(album => album.albumName);
-        items = items.filter(value => value.album && fal.includes(value.album));
-    }
-
-    if (data.genres && data.genres.length > 0) {
-        const fge = genres.filter(genre => data.genres.includes(genre.genreId)).map(genre => genre.name);
-        items = items.filter(value => value.genre && fge.includes(value.genre));
-    }
-
-    if (data.languages && data.languages.length > 0) {
-        const fge = languages.filter(language => data.languages.includes(language.languageId)).map(language => language.name);
-        items = items.filter(value => value.language && fge.includes(value.language));
-    }
-
-    if (data.startDate && data.endDate) {
-        items = items.filter(value => data.startDate.split('T')[0] <= value.date.split('T')[0] && value.date.split('T')[0] <= data.endDate.split('T')[0]);
-    }
-
-    response.status(200)
-        .send({
-            items: items,
-            totalCount: items.length
-        });
+app.post(media('record/list'), (request: Request, response: Response) => {
+    response.status(200).send(page(filterRecords(request)));
 });
 
-app.post(`/${record}/listFolder`, async (request: Request, response: Response) => {
-    const data = request.body;
-
-    const filter = request.query['filter'] ?? '';
-    let items = records;
-    if (filter) {
-        items = items.filter(value => value.title.toLowerCase().includes(filter.toString().toLowerCase()))
-    }
-
-
-    if (data.artists && data.artists.length > 0) {
-        const far = artists.filter(artist => data.artists.includes(artist.artistId)).map(artist => artist.name);
-        items = items.filter(value => value.artist && far.includes(value.artist));
-    }
-
-    if (data.albums && data.albums.length > 0) {
-        const fal = albums.filter(album => data.albums.includes(album.albumId)).map(album => album.albumName);
-        items = items.filter(value => value.album && fal.includes(value.album));
-    }
-
-    if (data.genres && data.genres.length > 0) {
-        const fge = genres.filter(genre => data.genres.includes(genre.genreId)).map(genre => genre.name);
-        items = items.filter(value => value.genre && fge.includes(value.genre));
-    }
-
-    if (data.languages && data.languages.length > 0) {
-        const fge = languages.filter(language => data.languages.includes(language.languageId)).map(language => language.name);
-        items = items.filter(value => value.language && fge.includes(value.language));
-    }
-
-    if (data.startDate && data.endDate) {
-        items = items.filter(value => data.startDate.split('T')[0] <= value.date.split('T')[0] && value.date.split('T')[0] <= data.endDate.split('T')[0]);
-    }
-
+app.post(media('record/listFolder'), (request: Request, response: Response) => {
+    const data = request.body ?? {};
+    const items = filterRecords(request);
     const dateFilterSet = data.startDate && data.endDate;
-    const isYearFilter = !dateFilterSet;
     const isMonthFilter = dateFilterSet && data.startDate.split('-')[0] == data.endDate.split('-')[0] && data.startDate.split('-')[1] != data.endDate.split('-')[1];
     const isDayFilter = dateFilterSet && data.startDate.split('-')[1] == data.endDate.split('-')[1];
 
-    const unique = [...new Set(items.map(item => item.date.split('T')[0]))];
-    const folder = unique.map(item => ({
-        year: isYearFilter ? +(item.split('-')[0]) : +(data.startDate.split('-')[0]),
+    const folder = [...new Set(items.map(item => day(item.date)))].map(item => ({
+        year: dateFilterSet ? +(data.startDate.split('-')[0]) : +(item.split('-')[0]),
         month: isMonthFilter ? +(item.split('-')[1]) : isDayFilter ? +(data.startDate.split('-')[1]) : null,
-        day: isDayFilter ? +(item.split('-')[2]) : null
+        day: isDayFilter ? +(item.split('-')[2]) : null,
     }));
 
-    response.status(200)
-        .send({
-            items: folder,
-            totalCount: folder.length
-        });
+    response.status(200).send(page(folder));
 });
 
-app.get(`/${mediaC}/artist/artists`, async (request: Request, response: Response) => {
-    const filter = request.query['filter'] ?? '';
-    let items = artists;
-    if (filter) {
-        items = items.filter(value => value.name.toLowerCase().includes(filter.toString().toLowerCase()))
-    }
-    response.status(200)
-        .send({
-            items: items,
-            totalCount: items.length
-        });
+app.post(media('record/check'), (request: Request, response: Response) => {
+    const checksums: string[] = Array.isArray(request.body) ? request.body : [];
+    response.status(200).send(records.filter(record => checksums.includes(record.checksum)));
 });
 
-app.get(`/${mediaC}/album/albums`, async (request: Request, response: Response) => {
-    const filter = request.query['filter'] ?? '';
-    let items = albums;
-    if (filter) {
-        items = items.filter(value => value.albumName.toLowerCase().includes(filter.toString().toLowerCase()))
+app.get(media('record/cover/:fileName'), (request: Request, response: Response) => {
+    const fileName = request.params.fileName as string;
+    if (!/^[A-Za-z0-9_-]{16}\.jpg$/.test(fileName) || !records.some(record => record.cover === fileName)) {
+        response.sendStatus(404);
+        return;
     }
-    response.status(200)
-        .send({
-            items: items,
-            totalCount: items.length
-        });
+    response.status(200).contentType('image/jpeg').sendFile(`public/covers/${fileName}`, { root: '.' });
 });
 
-app.get(`/${mediaC}/genre/genres`, async (request: Request, response: Response) => {
-    const filter = request.query['filter'] ?? '';
-    let items = genres;
-    if (filter) {
-        items = items.filter(value => value.name.toLowerCase().includes(filter.toString().toLowerCase()))
+app.get(media('record/:recordId'), (request: Request, response: Response) => {
+    const record = records.find(record => record.recordId === request.params.recordId);
+    if (!record) {
+        response.sendStatus(404);
+        return;
     }
-    response.status(200)
-        .send({
-            items: items,
-            totalCount: items.length
-        });
+    response.status(200).send(record);
 });
 
-app.get(`/${mediaC}/language/languages`, async (request: Request, response: Response) => {
-    const filter = request.query['filter'] ?? '';
-    let items = languages;
-    if (filter) {
-        items = items.filter(value => value.name.toLowerCase().includes(filter.toString().toLowerCase()))
-    }
-    response.status(200)
-        .send({
-            items: items,
-            totalCount: items.length
-        });
+/// tags ///
+app.get(media('artist/artists'), (request: Request, response: Response) => {
+    response.status(200).send(page(byFilter(artists, artist => artist.name, request.query.filter)));
+});
+
+app.get(media('artist/newestArtists'), (_request: Request, response: Response) => {
+    const newest = [...new Set(records.toSorted((a, b) => b.date.localeCompare(a.date)).map(record => record.artist))];
+    response.status(200).send(page(artists.filter(artist => newest.includes(artist.name))
+        .sort((a, b) => newest.indexOf(a.name) - newest.indexOf(b.name))));
+});
+
+app.get(media('artist/commonArtists'), (_request: Request, response: Response) => {
+    const common = mostCommon(records.map(record => record.artist));
+    response.status(200).send(page(common.map(name => artists.find(artist => artist.name === name)).filter(artist => artist)));
+});
+
+app.get(media('album/albums'), (request: Request, response: Response) => {
+    response.status(200).send(page(byFilter(albums, album => album.albumName, request.query.filter)));
+});
+
+app.get(media('genre/genres'), (request: Request, response: Response) => {
+    response.status(200).send(page(byFilter(genres, genre => genre.name, request.query.filter)));
+});
+
+app.get(media('genre/commonGenres'), (_request: Request, response: Response) => {
+    const common = mostCommon(records.map(record => record.genre));
+    response.status(200).send(page(common.map(name => genres.find(genre => genre.name === name)).filter(genre => genre)));
+});
+
+app.get(media('language/languages'), (request: Request, response: Response) => {
+    response.status(200).send(page(byFilter(languages, language => language.name, request.query.filter)));
 });
 
 /// stream ///
-app.get(`/${stream}/:recordId`, async (request: Request, response: Response) => {
-    const record = request.params.recordId?.split('.').slice(0, -1).join('.') ?? '';
-    console.log(record);
-    const hash = records.find(elem => elem.recordId === record)?.checksum;
+app.get(media('stream/:recordId'), (request: Request, response: Response) => {
+    const recordId = (request.params.recordId as string).replace(/\.[^.]*$/, '');
+    const hash = records.find(record => record.recordId === recordId)?.checksum;
     if (!hash) {
-        response.status(404);
+        response.sendStatus(404);
         return;
     }
-    response.status(200)
-        .contentType('audio/mpeg')
-        .sendFile(`public/songs/${hash}`, { root: '.' });
+    response.status(200).contentType('audio/mpeg').sendFile(`public/songs/${hash}`, { root: '.' });
 });
 
-app.post(`/${stream}/next/:recordId`, async (request: Request, response: Response) => {
-    const record = request.params.recordId ?? '';
-    const data = request.body;
-
-    const filter = request.query['filter'] ?? '';
-    const shuffle = Boolean(((request.query['shuffle']?.toString() ?? false) || "").replace(/\s*(false|null|undefined|0)\s*/i, ""));
-    const repeat = Boolean(((request.query['repeat']?.toString() ?? false) || "").replace(/\s*(false|null|undefined|0)\s*/i, ""));
-
-    let items = records;
-    if (filter) {
-        items = items.filter(value => value.title.toLowerCase().includes(filter.toString().toLowerCase()))
+app.post(media('stream/:direction/:recordId'), (request: Request, response: Response) => {
+    const next = request.params.direction === 'next';
+    if (!next && request.params.direction !== 'previous') {
+        response.sendStatus(404);
+        return;
     }
 
-    if (data.artists && data.artists.length > 0) {
-        const far = artists.filter(artist => data.artists.includes(artist.artistId)).map(artist => artist.name);
-        items = items.filter(value => value.artist && far.includes(value.artist));
-    }
-
-    if (data.albums && data.albums.length > 0) {
-        const fal = albums.filter(album => data.albums.includes(album.albumId)).map(album => album.albumName);
-        items = items.filter(value => value.album && fal.includes(value.album));
-    }
-
-    if (data.genres && data.genres.length > 0) {
-        const fge = genres.filter(genre => data.genres.includes(genre.genreId)).map(genre => genre.name);
-        items = items.filter(value => value.genre && fge.includes(value.genre));
-    }
-
-    if (data.languages && data.languages.length > 0) {
-        const fge = languages.filter(language => data.languages.includes(language.languageId)).map(language => language.name);
-        items = items.filter(value => value.language && fge.includes(value.language));
-    }
-
-    if (data.startDate && data.endDate) {
-        items = items.filter(value => data.startDate.split('T')[0] <= value.date.split('T')[0] && value.date.split('T')[0] <= data.endDate.split('T')[0]);
-    }
-
-    var count = items.length;
-    if (count == 0) {
+    const items = filterRecords(request);
+    if (items.length == 0) {
         response.status(200).send(null);
         return;
     }
 
-    // If shuffle, then the result is randomized take one random value from list
-    if (shuffle) {
+    if (flag(request.query.shuffle)) {
         response.status(200).send(items[Math.floor(Math.random() * items.length)]);
         return;
     }
 
-    // If actual record is not in result, then filter has changed, start from beginning.
-    if (items.find(value => value.recordId === record) == null) {
-        response.status(200).send(items.pop());
-        return;
-    }
-
-    // Skip all elements until id reached. Take the expected value. If previous is expected the query will be reversed.
-    // If only the actualId is in result, the end or beginning has been reached.
-    // Return null if no repeat is set, else return the first elemtn if we want to get tjhe next value, else get the last element.
-    var actualIndex = items.findIndex(value => value.recordId === record);
+    // If the actual record is not in the result, the filter has changed, so start from the beginning.
+    const actualIndex = items.findIndex(record => record.recordId === request.params.recordId);
     if (actualIndex === -1) {
-        response.status(200).send(null);
+        response.status(200).send(items[0]);
         return;
     }
 
-    if (actualIndex === (items.length - 1)) {
-        response.status(200).send(repeat ? items[0] : null);
+    const index = actualIndex + (next ? 1 : -1);
+    if (index < 0 || index >= items.length) {
+        const repeat = flag(request.query.repeat);
+        response.status(200).send(repeat ? items.at(next ? 0 : -1) : null);
         return;
     }
 
-    response.status(200).send(items[actualIndex + 1]);
-
-});
-
-app.post(`/${stream}/previous/:recordId`, async (request: Request, response: Response) => {
-    const record = request.params.recordId ?? '';
-    const data = request.body;
-
-    const filter = request.query['filter'] ?? '';
-    const shuffle = Boolean(((request.query['shuffle']?.toString() ?? false) || "").replace(/\s*(false|null|undefined|0)\s*/i, ""));
-    const repeat = Boolean(((request.query['repeat']?.toString() ?? false) || "").replace(/\s*(false|null|undefined|0)\s*/i, ""));
-    let items = records;
-    if (filter) {
-        items = items.filter(value => value.title.toLowerCase().includes(filter.toString().toLowerCase()))
-    }
-
-    if (data.artists && data.artists.length > 0) {
-        const far = artists.filter(artist => data.artists.includes(artist.artistId)).map(artist => artist.name);
-        items = items.filter(value => value.artist && far.includes(value.artist));
-    }
-
-    if (data.albums && data.albums.length > 0) {
-        const fal = albums.filter(album => data.albums.includes(album.albumId)).map(album => album.albumName);
-        items = items.filter(value => value.album && fal.includes(value.album));
-    }
-
-    if (data.genres && data.genres.length > 0) {
-        const fge = genres.filter(genre => data.genres.includes(genre.genreId)).map(genre => genre.name);
-        items = items.filter(value => value.genre && fge.includes(value.genre));
-    }
-
-    if (data.languages && data.languages.length > 0) {
-        const fge = languages.filter(language => data.languages.includes(language.languageId)).map(language => language.name);
-        items = items.filter(value => value.language && fge.includes(value.language));
-    }
-
-    if (data.startDate && data.endDate) {
-        items = items.filter(value => data.startDate.split('T')[0] <= value.date.split('T')[0] && value.date.split('T')[0] <= data.endDate.split('T')[0]);
-    }
-
-    var count = items.length;
-    if (count == 0) {
-        response.status(200).send(null);
-        return;
-    }
-
-    // If shuffle, then the result is randomized take one random value from list
-    if (shuffle) {
-        response.status(200).send(items[Math.floor(Math.random() * items.length)]);
-        return;
-    }
-
-    // If actual record is not in result, then filter has changed, start from beginning.
-    if (items.find(value => value.recordId === record) == null) {
-        response.status(200).send(items.pop());
-        return;
-    }
-
-    // Skip all elements until id reached. Take the expected value. If previous is expected the query will be reversed.
-    // If only the actualId is in result, the end or beginning has been reached.
-    // Return null if no repeat is set, else return the first elemtn if we want to get tjhe next value, else get the last element.
-    var actualIndex = items.findIndex(value => value.recordId === record);
-    if (actualIndex === -1) {
-        response.status(200).send(null);
-        return;
-    }
-
-    if (actualIndex === 0) {
-        response.status(200).send(repeat ? items[items.length - 1] : null);
-        return;
-    }
-
-    response.status(200).send(items[actualIndex - 1]);
+    response.status(200).send(items[index]);
 });
 
 /// register homepage ///
-app.get('/register', (req: Request, res: Response): void => {
-    res.sendFile('./static/register.html', { root: __dirname });
+app.get('/register', (_request: Request, response: Response) => {
+    response.sendFile('src/static/register.html', { root: '.' });
 });
