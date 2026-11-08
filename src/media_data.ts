@@ -8,6 +8,7 @@ interface Record {
     language?: string,
     album?: string,
     albumId?: string,
+    cover?: string,
     checksum: string,
 };
 
@@ -21,6 +22,7 @@ export const records: Array<Record> = [
         genre: 'Classical',
         album: 'Franz Schuberts Ave Maria',
         albumId: '387abe22-5760-49fd-9a38-d2d8baa8ac3f',
+        cover: 'demo-cover-avemr.jpg',
         date: '2009-01-01T01:00:00Z',
         duration: 325000.0,
     },
